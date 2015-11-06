@@ -22,7 +22,7 @@ module.exports = function(grunt) {
           'public/lib/*.js',
         ],
         dest: 'public/dist/vendor.js',
-    }
+      }
     },
 
     mochaTest: {
@@ -48,29 +48,29 @@ module.exports = function(grunt) {
     },
 
     jshint: {
+      // beforeconcat: [ 'public/client/*.js' ],
+      // afterconcat: [ 'public/dist/production.js' ],
       files: [
-        // Add filespec list here
+        'public/client/*.js'
+        // 'public/dist/production.js' // doesn't seem to have access b/c gitignore
       ],
       options: {
-        force: 'true',
+        force: false,
         jshintrc: '.jshintrc',
         ignores: [
           'public/lib/**/*.js',
           'public/dist/**/*.js'
-        ]
+        ],
       }
     },
 
     cssmin: {
-      target: {
-        files: [{
-          expand: true,
-          cwd: 'public',
-          src: ['*.css', '!*.min.css'],
-          dest: 'public/dist/css',
-          ext: '.min.css'
-        }]
-      }   
+       build: {
+         files: {
+           'public/dist/css/style.min.css': 'public/*.css'
+         }
+       }
+
     },
 
     watch: {
@@ -82,7 +82,10 @@ module.exports = function(grunt) {
         tasks: [
           'concat',
           'uglify'
-        ]
+        ],
+        options: {
+          interrupt: true,
+        }
       },
       css: {
         files: 'public/*.css',
@@ -92,6 +95,12 @@ module.exports = function(grunt) {
 
     shell: {
       prodServer: {
+        command: 'git push heroku master',
+        options: {
+          stdout: true,
+          stderr: true, 
+          failOnError: true
+        }
       }
     },
   });
@@ -122,26 +131,31 @@ module.exports = function(grunt) {
   // Main grunt tasks
   ////////////////////////////////////////////////////
 
-// need to add grunt.registerTask('default', []); ??
 
   grunt.registerTask('test', [
+    'jshint',
     'mochaTest'
   ]);
 
-  grunt.registerTask('build', ['concat', 'uglify', 'cssmin'
+  grunt.registerTask('build', ['test', 'concat', 'uglify', 'cssmin',
   ]);
 
   grunt.registerTask('upload', function(n) {
-    if(grunt.option('prod')) {
-      // add your production server task here
+    if(grunt.option('prod')) {   
+      grunt.task.run([ 'shell:prodServer' ]);
     } else {
       grunt.task.run([ 'server-dev' ]);
     }
   });
 
-  grunt.registerTask('deploy', [
-    // add your deploy tasks here
+  grunt.registerTask('deploy', [     
+    'test',
+    'build', 
+    'upload'
   ]);
 
+  grunt.registerTask('heroku:production', 'build');
 
 };
+
+
